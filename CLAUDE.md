@@ -18,40 +18,39 @@ Use the decision tree to determine correct placement for new functions.
 
 ## File Structure
 ```
-Makefile
 docs/
-├── spec.md
-├── todo.md
-├── module_responsibility_matrix.md
+├── spec.md                              # Requirements specification
+├── todo.md                              # Development tracking
+├── module_responsibility_matrix.md      # Code organization rules
+├── passthrough_combinator_todo.md       # Entity-specific todos
 mod/
-├── info.json
-├── changelog.txt
-├── thumbnail.png (optional, 144x144)
-├── data.lua
-├── control.lua         # event registration and routing to entity specific code. command registration
-├── lib/                    # Stateless utility libraries
-│   ├── circuit_utils.lua
-│   ├── gui/                # common gui features
-│       ├── gui_entity.lua                  # GUI components usefule for most entities
-├── scripts/               # Stateful entity logic
-│   ├── globals.lua       # Entity state management, interactions with stoarge encapsualted here
-│   ├── network_manager.lua  # Cross-surface coordination
-│   └── example_entity/
-│       ├── example_entity.lua  # Core functionality
-│       ├── gui.lua                  # GUI handling
-│       └── control.lua              # Event handling
+├── info.json                            # Mod metadata
+├── data.lua                             # Data stage entry point
+├── control.lua                          # Runtime entry - event routing
+├── lib/                                 # Stateless utility libraries
+│   ├── entity_lib.lua                   # Entity name/ghost utilities
+│   ├── circuit_utils.lua                # Circuit network helpers
+│   └── gui/                             # Shared GUI components
+│       ├── gui_entity.lua               # Entity GUI utilities (power status, etc.)
+│       └── gui_circuit_inputs.lua       # Signal grid display
+├── scripts/                             # Stateful entity logic
+│   ├── globals.lua                      # Central storage aggregator + shared state
+│   └── passthrough_combinator/          # Entity-specific module
+│       ├── storage.lua                  # Entity storage management
+│       ├── control.lua                  # Event handlers
+│       └── gui.lua                      # Custom GUI
 ├── locale/
 │   └── en/
-│       └── mission-control-tower.cfg
-├── prototypes/
-│   ├── technology/
-│   │   └── technologies.lua  # All technology definitions
-│   ├── entity/
-│   │   └── example_entity.lua
-│   ├── item/
-│   │   └── example_entity.lua
-│   └── recipe/
-│       └── example_entity.lua
+│       └── passthrough-combinator.cfg   # Localization strings
+└── prototypes/
+    ├── technology/
+    │   └── technologies.lua             # Technology definitions
+    ├── entity/
+    │   └── passthrough_combinator.lua   # Entity prototype
+    ├── item/
+    │   └── passthrough_combinator.lua   # Item prototype
+    └── recipe/
+        └── passthrough_combinator.lua   # Recipe prototype
 └── graphics/
 │   ├── entity/
 │   │   ├── receiver-combinator/
@@ -65,7 +64,7 @@ mod/
 │   ├── technology/
 │   │   ├── mission-control.png
 │   └── gui/
-│       └── ...
+│       └── ...        
 ```
 
 Important Process Rules:

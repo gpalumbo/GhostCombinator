@@ -41,7 +41,6 @@ This is a template.  We will generate one entity with a simple gui as an example
 **Implementation Critical:**
 ```lua
 -- Use standard combinator prototype as base
--- Hook into on_wire_added/removed events to track connected entities
 -- Persist state across save/load
 -- Update GUI layout dynamically when and_or toggled
 ```
@@ -59,10 +58,9 @@ This is a template.  We will generate one entity with a simple gui as an example
 
 ### MUST Handle:
 1. **Entity lifecycle events** - Cleanup when entities destroyed
-3. **Wire changes** - Recache connections when wires added/removed
-4. **Save/Load** - Properly serialize global state
-5. **Multiplayer** - Ensure signal sync across players
-6. **Quality scaling** - Apply quality bonuses to health/power
+2. **Save/Load** - Properly serialize global state
+3. **Multiplayer** - Ensure signal sync across players
+4. **Quality scaling** - Apply quality bonuses to health/power
 
 ## Architecture Notes
 
@@ -108,7 +106,6 @@ sotrage.<modname> = {
 ### Events & Lifecycle
 - [ ] Platform lifecycle events handled
 - [ ] Entity destroyed events cleanup global state
-- [ ] Wire added/removed updates connections
 - [ ] Save/load preserves all state
 - [ ] Multiplayer synchronized properly
 

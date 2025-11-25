@@ -63,9 +63,23 @@ Based on the Logistics Chooser Combinator implementation.
 
 ---
 
-## 3. STORAGE STRUCTURE (mod/scripts/globals.lua)
+## 3. STORAGE ARCHITECTURE
 
-### Global Storage Table
+### File Organization
+Storage is split into two layers:
+
+1. **Entity-specific storage** (`mod/scripts/[entity]/storage.lua`):
+   - Contains all storage functions specific to one entity type
+   - Uses short function names: `register()`, `get_data()`, `update_data()`
+   - Only accessed by entity's own modules (control.lua, gui.lua)
+
+2. **Central aggregator** (`mod/scripts/globals.lua`):
+   - Requires all entity storage modules
+   - Re-exports entity functions with prefixed names for backwards compatibility
+   - Manages shared state (player GUI states)
+   - Provides unified `init_storage()` that initializes all storage tables
+
+### Storage Table Structure
 ```lua
 storage.entity_name_plural = {
     [unit_number] = {
@@ -78,19 +92,20 @@ storage.entity_name_plural = {
 }
 ```
 
-### Required Storage Functions
-- [ ] **register_[entity](entity)**: Create storage entry when entity is built. Initialize all required fields with defaults.
-- [ ] **unregister_[entity](unit_number)**: Remove storage entry when entity is destroyed. Clean up any dependent data.
-- [ ] **get_[entity]_data(entity_or_unit_number)**: Universal getter accepting entity OR unit_number. Handle ghost entities by reading tags, real entities from storage.
+### Required Storage Functions (in entity's storage.lua)
+- [ ] **init_storage()**: Initialize entity's storage table
+- [ ] **register(entity)**: Create storage entry when entity is built. Initialize all required fields with defaults.
+- [ ] **unregister(unit_number)**: Remove storage entry when entity is destroyed. Clean up any dependent data.
+- [ ] **get_data(entity_or_unit_number)**: Universal getter accepting entity OR unit_number. Handle ghost entities by reading tags, real entities from storage.
 
 ### Configuration Storage Functions (if entity has configuration)
-- [ ] **serialize_[entity]_config(unit_number)**: Convert storage data to blueprint-compatible table for tags/blueprints.
-- [ ] **restore_[entity]_config(entity, config)**: Apply configuration from blueprint tags. Handle both ghost (write tags) and real (write storage).
-- [ ] **get_ghost_[entity]_config(ghost_entity)**: Read configuration from ghost entity tags. Return default config if tags missing.
-- [ ] **save_ghost_[entity]_config(ghost_entity, config)**: Write configuration to ghost entity tags using complete table assignment pattern.
+- [ ] **serialize_config(unit_number)**: Convert storage data to blueprint-compatible table for tags/blueprints.
+- [ ] **restore_config(entity, config)**: Apply configuration from blueprint tags. Handle both ghost (write tags) and real (write storage).
+- [ ] **get_ghost_config(ghost_entity)**: Read configuration from ghost entity tags. Return default config if tags missing.
+- [ ] **save_ghost_config(ghost_entity, config)**: Write configuration to ghost entity tags using complete table assignment pattern.
 
 ### Universal Update Function (for GUI operations)
-- [ ] **update_[entity]_data_universal(entity, data)**: Write complete configuration to entity. Handle both ghost (write to tags) and real (write to storage). This is the cleanest approach - GUI gets data, modifies it, and writes it back in one operation.
+- [ ] **update_data(entity, data)**: Write complete configuration to entity. Handle both ghost (write to tags) and real (write to storage). This is the cleanest approach - GUI gets data, modifies it, and writes it back in one operation.
 
 **ALTERNATIVE**: Individual universal functions (add/update/remove for each data type) create bloat. Prefer the single update function that writes complete config.
 
@@ -229,7 +244,7 @@ end
 - **Ghost vs Real entity handling**: serialize_config() must handle both ghosts (read from entity.tags) and real entities (read from storage). Use universal getter function.
 
 ### Performance
-- **Cache connections**: Don't scan for connected entities every tick. Update cache on wire events or periodic interval (90 ticks).
+- **Cache connections**: Don't scan for connected entities every tick. Update cache on periodic interval (90 ticks).
 - **Use on_nth_tick not on_tick**: Even 15-tick interval (250ms) is frequent enough for most logic.
 - **Edge-triggered logic**: Store last_state and only act on state changes to avoid repeated processing.
 
