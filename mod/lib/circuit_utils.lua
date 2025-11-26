@@ -149,6 +149,34 @@ function circuit_utils.get_signal_count_for_wire(entity, connector_id)
     return count
 end
 
+--- Look up the item name that places a given entity
+--- Entity names don't always match item names (e.g., "straight-rail" -> "rail")
+--- Uses LuaEntityPrototype.items_to_place_this to find the correct item
+--- @param entity_name string The entity prototype name (e.g., ghost_name)
+--- @return string The item name that places this entity (falls back to entity_name if not found)
+function circuit_utils.get_item_name_for_entity(entity_name)
+    if not entity_name then
+        return nil
+    end
+
+    -- Look up the entity prototype
+    local entity_proto = prototypes.entity[entity_name]
+    if not entity_proto then
+        -- Entity prototype not found, fall back to entity name
+        return entity_name
+    end
+
+    -- Check if items_to_place_this exists and has entries
+    -- Construction bots use the first item in this array
+    local items_to_place = entity_proto.items_to_place_this
+    if items_to_place and #items_to_place > 0 then
+        return items_to_place[1].name
+    end
+
+    -- No items_to_place_this defined, fall back to entity name
+    return entity_name
+end
+
 function circuit_utils.signal_to_prototype(signal)
       if not signal or not signal.name then
         return nil

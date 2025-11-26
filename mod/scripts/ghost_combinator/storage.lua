@@ -7,11 +7,11 @@
 --     [surface_index] = {
 --         combinators = { [unit_number] = entity, ... },
 --         ghosts = {
---             ["entity_name:quality"] = {
+--             ["item_name:quality"] = {    -- Key is item_name:quality (not entity_name)
 --                 count = N,
 --                 slot = M,
 --                 changed = true/false,
---                 name = "entity_name",     -- Original ghost_name for signal
+--                 item_name = "item_name",  -- Item name for signal output (looked up from entity)
 --                 quality = "quality_name"  -- Quality for signal
 --             },
 --         },
@@ -20,6 +20,10 @@
 --         last_compact_tick = 0  -- Track when we last compacted slots
 --     }
 -- }
+-- NOTE: Entity names don't always match item names (e.g., "straight-rail" -> "rail")
+-- Multiple entity types may map to the same item, so they share a slot.
+
+local circuit_utils = require("lib.circuit_utils")
 
 local gc_storage = {}
 
@@ -161,8 +165,13 @@ function gc_storage.increment_ghost(surface_index, ghost_name, quality_name)
         return
     end
 
-    -- Use "name:quality" as key to track different qualities separately
-    local ghost_key = ghost_name .. ":" .. quality_name
+    -- Look up the item name that places this entity
+    -- Entity names don't always match item names (e.g., "straight-rail" -> "rail")
+    -- Multiple entity types may map to the same item (e.g., straight-rail, curved-rail -> rail)
+    local item_name = circuit_utils.get_item_name_for_entity(ghost_name)
+
+    -- Use "item_name:quality" as key so entities sharing an item are combined
+    local ghost_key = item_name .. ":" .. quality_name
     local ghost_entry = surface_data.ghosts[ghost_key]
 
     if ghost_entry then
@@ -176,7 +185,7 @@ function gc_storage.increment_ghost(surface_index, ghost_name, quality_name)
             count = 1,
             slot = slot,
             changed = true,
-            name = ghost_name,      -- Store original name for signal
+            item_name = item_name,  -- Store item name for signal output
             quality = quality_name  -- Store quality for signal
         }
         surface_data.next_slot = slot + 1
@@ -202,8 +211,11 @@ function gc_storage.decrement_ghost(surface_index, ghost_name, quality_name)
         return
     end
 
-    -- Use "name:quality" as key
-    local ghost_key = ghost_name .. ":" .. quality_name
+    -- Look up the item name that places this entity (must match increment_ghost)
+    local item_name = circuit_utils.get_item_name_for_entity(ghost_name)
+
+    -- Use "item_name:quality" as key (must match increment_ghost)
+    local ghost_key = item_name .. ":" .. quality_name
     local ghost_entry = surface_data.ghosts[ghost_key]
 
     if ghost_entry then

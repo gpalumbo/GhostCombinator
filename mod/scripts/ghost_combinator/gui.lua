@@ -44,10 +44,10 @@ local function get_ghost_signals(surface_index)
 
     -- Convert to signal format expected by gui_circuit_inputs
     for _, ghost_info in pairs(ghost_data.ghosts) do
-        if ghost_info and ghost_info.count > 0 then
-            -- Use "item" signal type - most ghosts have item representations
+        if ghost_info and ghost_info.count > 0 and ghost_info.item_name then
+            -- Use "item" signal type with the resolved item name
             table.insert(signals, {
-                signal = { type = "item", name = ghost_info.name, quality = ghost_info.quality },
+                signal = { type = "item", name = ghost_info.item_name, quality = ghost_info.quality },
                 count = ghost_info.count
             })
         end

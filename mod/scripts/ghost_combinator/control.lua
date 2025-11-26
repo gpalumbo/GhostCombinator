@@ -50,12 +50,12 @@ local function initialize_combinator_slots(combinator, ghosts)
     -- Write ALL slots (ignore changed flag - this is initialization)
     local slot_count = 0
     for ghost_key, ghost_data in pairs(ghosts) do
-        if ghost_data.count > 0 and ghost_data.name then
-            -- Use stored entity name and quality
+        if ghost_data.count > 0 and ghost_data.item_name then
+            -- Use stored item name and quality for signal output
             local filter = {
                 value = {
                     type = "item",
-                    name = ghost_data.name,
+                    name = ghost_data.item_name,
                     quality = ghost_data.quality or "normal"
                 },
                 min = ghost_data.count
@@ -308,14 +308,13 @@ function control.update_combinator_slots(combinator, ghosts)
             local count = ghost_data.count
 
             if count > 0 then
-                -- Get the actual entity name and quality from stored data
-                -- ghost_data.name is the entity's ghost_name, ghost_data.quality is its quality
-                local entity_name = ghost_data.name
+                -- Get the item name and quality from stored data
+                local item_name = ghost_data.item_name
                 local quality_name = ghost_data.quality or "normal"
 
-                if not entity_name then
-                    -- Skip if no name stored (shouldn't happen, but safety check)
-                    log("[ghost_combinator] WARNING: No entity name stored for ghost entry")
+                if not item_name then
+                    -- Skip if no item_name stored (shouldn't happen, but safety check)
+                    log("[ghost_combinator] WARNING: No item_name stored for ghost entry")
                 else
                     -- Set slot with ghost item signal
                     -- LogisticFilter format: {value = SignalFilter, min = count}
@@ -323,7 +322,7 @@ function control.update_combinator_slots(combinator, ghosts)
                     local filter = {
                         value = {
                             type = "item",
-                            name = entity_name,
+                            name = item_name,
                             quality = quality_name
                         },
                         min = count
