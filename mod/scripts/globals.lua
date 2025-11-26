@@ -1,16 +1,16 @@
--- Mission Control Mod - Global Storage Management
+-- Ghost Combinator Mod - Global Storage Management
 -- Central aggregator for all entity storage modules and shared state
 -- CRITICAL: Uses Factorio 2.0 APIs - storage NOT global!
 --
 -- This module:
--- 1. Aggregates entity-specific storage modules (passthrough_combinator/storage.lua, etc.)
+-- 1. Aggregates entity-specific storage modules (ghost_combinator/storage.lua, etc.)
 -- 2. Manages shared state (player GUI states)
 -- 3. Provides unified init_storage() for all storage tables
 
 local entity_lib = require("lib.entity_lib")
 
 -- Import entity-specific storage modules
-local pc_storage = require("scripts.passthrough_combinator.storage")
+local gc_storage = require("scripts.ghost_combinator.storage")
 
 local globals = {}
 
@@ -22,9 +22,9 @@ local globals = {}
 --- Called during on_init and on_configuration_changed events
 function globals.init_storage()
     -- Initialize entity-specific storage
-    pc_storage.init_storage()
+    gc_storage.init_storage()
 
-    -- Initialize shared storage
+    -- Initialize shared storage (minimal - used only for GUI compatibility)
     storage.player_gui_states = storage.player_gui_states or {}
 end
 
@@ -36,7 +36,7 @@ end
 --- Stores entity reference, not unit_number, for validity checking
 --- @param player_index number The player index
 --- @param entity LuaEntity The entity being viewed
---- @param gui_type string The type of GUI opened (e.g., "passthrough_combinator")
+--- @param gui_type string The type of GUI opened (e.g., "ghost_combinator")
 function globals.set_player_gui_entity(player_index, entity, gui_type)
     if not player_index then
         game.print("[ERROR] set_player_gui_entity called with nil player_index")
@@ -128,7 +128,7 @@ function globals.cleanup_player_gui_states_for_entity(entity, gui_frame_name)
             if player and player.valid then
                 -- Try the provided frame name, or fall back to known frame names
                 local frame_names = gui_frame_name and {gui_frame_name} or {
-                    "passthrough_combinator_gui"
+                    "ghost_combinator_gui"
                     -- Add other GUI frame names here as needed
                 }
 

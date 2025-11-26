@@ -1,17 +1,18 @@
--- Mission Control Mod - Main Control
+-- Ghost Combinator Mod - Main Control
 -- Event registration and routing to entity-specific handlers
+-- CRITICAL: Uses Factorio 2.0 APIs only!
 
 local flib_gui = require("__flib__.gui")
 
 -- Entity modules
-local passthrough_control = require("scripts.passthrough_combinator.control")
-local passthrough_gui = require("scripts.passthrough_combinator.gui")
+local gc_control = require("scripts.ghost_combinator.control")
+local gc_gui = require("scripts.ghost_combinator.gui")
 local globals = require("scripts.globals")
 local entity_lib = require("lib.entity_lib")
 local circuit_utils = require("lib.circuit_utils")
 
 -- Entity name constants
-local PASSTHROUGH_COMBINATOR = "passthrough-combinator"
+local GHOST_COMBINATOR = "ghost-combinator"
 
 -- Register custom input handler for pipette tool on GUI signal buttons
 script.on_event("gui-pipette-signal", function(event)
@@ -39,59 +40,117 @@ end)
 -----------------------------------------------------------
 
 script.on_init(function()
-    log("[example-mod] on_init")
+    log("[ghost-combinator] on_init")
     globals.init_storage()
 end)
 
+script.on_load(function()
+    log("[ghost-combinator] on_load")
+    -- No initialization needed on load - storage already exists
+end)
+
 script.on_configuration_changed(function(data)
-    log("[example-mod] on_configuration_changed")
+    log("[ghost-combinator] on_configuration_changed")
     -- Run migrations if needed
     globals.init_storage()  -- Ensure storage tables exist
 end)
 
 -----------------------------------------------------------
--- BUILD EVENT ROUTING
+-- ENTITY BUILD/DESTROY EVENT ROUTING
+-- CRITICAL: Ghost tracking requires NO filters (monitors all entities)
+-- Combinator events use filters for performance
 -----------------------------------------------------------
 
--- Helper to route build events
-local function route_build_event(event)
-    if entity_lib.is_type(event.entity, PASSTHROUGH_COMBINATOR) then
-        passthrough_control.on_built(event)
+--- Unified handler for all entity build events
+--- Routes to ghost tracking OR combinator creation based on entity type
+--- @param event EventData Event data with entity and optional tags
+local function on_entity_built(event)
+    local entity = event.entity
+    if not entity or not entity.valid then return end
+
+    -- Route to appropriate handler based on entity type
+    if entity.type == "entity-ghost" then
+        -- Track ALL ghosts (no filter - this runs on every ghost built)
+        gc_control.on_ghost_built(event)
+    elseif entity.name == GHOST_COMBINATOR then
+        -- Handle combinator creation
+        gc_control.on_combinator_built(event)
     end
 end
 
--- Register build events with filters
-local build_filter = {
-    {filter = "name", name = PASSTHROUGH_COMBINATOR},
-    {filter = "ghost_name", name = PASSTHROUGH_COMBINATOR}
-}
+--- Unified handler for all entity removal events
+--- Routes to ghost tracking OR combinator cleanup based on entity type
+--- @param event EventData Event data with entity
+local function on_entity_removed(event)
+    local entity = event.entity
+    if not entity or not entity.valid then return end
 
-script.on_event(defines.events.on_built_entity, route_build_event, build_filter)
-script.on_event(defines.events.on_robot_built_entity, route_build_event, build_filter)
-script.on_event(defines.events.on_space_platform_built_entity, route_build_event, build_filter)
-script.on_event(defines.events.script_raised_built, route_build_event, build_filter)
-script.on_event(defines.events.script_raised_revive, route_build_event, build_filter)
-
------------------------------------------------------------
--- DESTROY EVENT ROUTING
------------------------------------------------------------
-
-local function route_destroy_event(event)
-    if entity_lib.is_type(event.entity, PASSTHROUGH_COMBINATOR) then
-        passthrough_control.on_removed(event)
+    -- Route to appropriate handler based on entity type
+    if entity.type == "entity-ghost" then
+        -- Track ALL ghost removals (no filter - runs on every ghost removed)
+        gc_control.on_ghost_removed(event)
+    elseif entity.name == GHOST_COMBINATOR then
+        -- Handle combinator destruction
+        gc_control.on_combinator_removed(event)
     end
 end
 
-local destroy_filter = {
-    {filter = "name", name = PASSTHROUGH_COMBINATOR},
-    {filter = "ghost_name", name = PASSTHROUGH_COMBINATOR}
+-- Register build events WITHOUT filters to catch both ghosts and combinators
+-- The handlers do internal type checking for performance
+script.on_event(defines.events.on_built_entity, on_entity_built)
+script.on_event(defines.events.on_robot_built_entity, on_entity_built)
+script.on_event(defines.events.script_raised_built, on_entity_built)
+script.on_event(defines.events.script_raised_revive, on_entity_built)
+
+-- Register destroy events WITHOUT filters to catch both ghosts and combinators
+script.on_event(defines.events.on_player_mined_entity, on_entity_removed)
+script.on_event(defines.events.on_robot_mined_entity, on_entity_removed)
+script.on_event(defines.events.on_entity_died, on_entity_removed)
+script.on_event(defines.events.script_raised_destroy, on_entity_removed)
+
+-----------------------------------------------------------
+-- COMBINATOR-SPECIFIC EVENTS (WITH FILTERS)
+-- These only apply to the ghost-combinator entity itself
+-----------------------------------------------------------
+
+-- Combinator event filter
+local combinator_filter = {
+    {filter = "name", name = GHOST_COMBINATOR},
+    {filter = "ghost_name", name = GHOST_COMBINATOR}
 }
 
-script.on_event(defines.events.on_player_mined_entity, route_destroy_event, destroy_filter)
-script.on_event(defines.events.on_robot_mined_entity, route_destroy_event, destroy_filter)
-script.on_event(defines.events.on_space_platform_mined_entity, route_destroy_event, destroy_filter)
-script.on_event(defines.events.on_entity_died, route_destroy_event, destroy_filter)
-script.on_event(defines.events.script_raised_destroy, route_destroy_event, destroy_filter)
+-- Blueprint and copy-paste events for combinators only
+script.on_event(defines.events.on_player_setup_blueprint, function(event)
+    gc_control.on_player_setup_blueprint(event)
+end)
+
+script.on_event(defines.events.on_entity_settings_pasted, function(event)
+    local source = event.source
+    local destination = event.destination
+
+    if not source or not source.valid then return end
+    if not destination or not destination.valid then return end
+
+    -- Only handle if one of them is our combinator
+    if entity_lib.is_type(source, GHOST_COMBINATOR) or
+       entity_lib.is_type(destination, GHOST_COMBINATOR) then
+        gc_control.on_entity_settings_pasted(event)
+    end
+end, combinator_filter)
+
+script.on_event(defines.events.on_entity_cloned, function(event)
+    local source = event.source
+    local destination = event.destination
+
+    if not source or not source.valid then return end
+    if not destination or not destination.valid then return end
+
+    -- Only handle if one of them is our combinator
+    if entity_lib.is_type(source, GHOST_COMBINATOR) or
+       entity_lib.is_type(destination, GHOST_COMBINATOR) then
+        gc_control.on_entity_cloned(event)
+    end
+end, combinator_filter)
 
 -----------------------------------------------------------
 -- GUI EVENT ROUTING
@@ -99,48 +158,38 @@ script.on_event(defines.events.script_raised_destroy, route_destroy_event, destr
 
 -- Handle GUI opened events - let the GUI module decide if it's relevant
 script.on_event(defines.events.on_gui_opened, function(event)
-    passthrough_gui.on_gui_opened(event)
+    gc_gui.on_gui_opened(event)
 end)
 
 -- Handle GUI closed events - let the GUI module decide if it's relevant
 script.on_event(defines.events.on_gui_closed, function(event)
-    passthrough_gui.on_gui_closed(event)
+    gc_gui.on_gui_closed(event)
 end)
 
 -- Handle all GUI clicks - let the GUI module decide if it's relevant
 script.on_event(defines.events.on_gui_click, function(event)
-    passthrough_gui.on_gui_click(event)
+    gc_gui.on_gui_click(event)
 end)
 
 -- Handle all checkbox state changes - let the GUI module decide if it's relevant
 script.on_event(defines.events.on_gui_checked_state_changed, function(event)
-    passthrough_gui.on_gui_checked_state_changed(event)
-end)
-
------------------------------------------------------------
--- BLUEPRINT/COPY-PASTE ROUTING
------------------------------------------------------------
-
-script.on_event(defines.events.on_player_setup_blueprint, function(event)
-    passthrough_control.on_player_setup_blueprint(event)
-end)
-
-script.on_event(defines.events.on_entity_settings_pasted, function(event)
-    passthrough_control.on_entity_settings_pasted(event)
-end)
-
-script.on_event(defines.events.on_entity_cloned, function(event)
-    passthrough_control.on_entity_cloned(event)
+    gc_gui.on_gui_checked_state_changed(event)
 end)
 
 -----------------------------------------------------------
 -- PERIODIC UPDATES
 -----------------------------------------------------------
 
--- Update every 15 ticks (250ms) for signal processing
-script.on_nth_tick(15, function(event)
-    -- Route to entity update handlers
-    passthrough_control.on_update(event)
+-- Every tick: Update combinator outputs if ghost counts changed
+-- CRITICAL: This must be fast! Only processes combinators on surfaces with changes
+script.on_event(defines.events.on_tick, function(event)
+    gc_control.on_tick(event)
 end)
 
-log("[example-mod] control.lua loaded")
+-- Every 5 seconds (300 ticks): Compact ghost slot assignments
+-- Removes zero-count ghosts and compresses slot IDs to avoid gaps
+script.on_nth_tick(300, function(event)
+    gc_control.compact_ghost_slots(event)
+end)
+
+log("[ghost-combinator] control.lua loaded")

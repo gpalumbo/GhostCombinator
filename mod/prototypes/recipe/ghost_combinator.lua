@@ -1,10 +1,10 @@
--- Passthrough Combinator Recipe Prototype
+-- Ghost Combinator Recipe Prototype
 -- Factorio 2.0 API
 
 data:extend({
     {
         type = "recipe",
-        name = "passthrough-combinator",
+        name = "ghost-combinator",
         -- Recipe is disabled by default, unlocked via technology
         enabled = false,
         -- Crafting time (0.5 seconds)
@@ -16,9 +16,9 @@ data:extend({
         },
         -- Recipe output
         results = {
-            {type = "item", name = "passthrough-combinator", amount = 1}
+            {type = "item", name = "ghost-combinator", amount = 1}
         }
     }
 })
 
-log("[mission-control] prototypes/recipe/passthrough_combinator.lua loaded")
+log("[mission-control] prototypes/recipe/ghost_combinator.lua loaded")

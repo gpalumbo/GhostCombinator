@@ -5,18 +5,18 @@
 require("__flib__.data")
 
 -- Load entity prototypes
-require("prototypes.entity.passthrough_combinator")
+require("prototypes.entity.ghost_combinator")
 
 -- Load item prototypes
-require("prototypes.item.passthrough_combinator")
+require("prototypes.item.ghost_combinator")
 
 -- Load recipe prototypes
-require("prototypes.recipe.passthrough_combinator")
+require("prototypes.recipe.ghost_combinator")
 
 -- Load technology prototypes
 require("prototypes.technology.technologies")
 
-log("[example-mod] data.lua loaded")
+log("[ghost_combinator] data.lua loaded")
 
 data:extend({
   {

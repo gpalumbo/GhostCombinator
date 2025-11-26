@@ -1,60 +1,46 @@
 # My Example Mod 
 
 ## Vision Statement
-_Typically a general top level for AI to understand hos the module works together_
-This is a template.  We will generate one entity with a simple gui as an example but it won't really do anything over the base entity.  It will be a combinator that passes the signals through. 
+Logistics data from roboports only list items and not construction requests.
+This combinator will keep a count of each ghost and create a set of signals of all ghosts on a surface.  
 
 ## Core Components
 
 ### 1. Technologies
 
-#### No-Op Examples Technology
-- **Name:** `noop exmaple`
-- **Cost:** 1000x each science pack (automation, logistic, military, chemical, production, utility, space)
-- **Prerequisites:** Space Science, Logistic system
-- **Unlocks:** Passthrough Combinator
-- **Icon:** Artimetic combinator with a single red led on the display
+#### Ghost Combinator Technology
+- **Name:** 'Ghost Combinator"
+- **Cost:** 500x each science pack (automation, logistic, chemical, production, utility)
+- **Prerequisites:** Logistic system, Production science pack
+- **Unlocks:** Ghost Combinator
+- **Icon:** constant combinator
 
 ### 2. Receiver Combinator
 
 **Entity Specifications:**
 - **Size:** 2x1 combinator
 - **Recipe:** 5x electronic circuits , 5x advanced circuits
-- **Placement:** surface eeds >0 pressure (on planets only)
+- **Placement:** no restrictions
 - **Health:** 150 (same as arithmetic combinator, scales with quality)
 - **Power:** 1kW 
-- **Circuit Connections:** 4 terminals (red in, red out, green in, green out)
-- **Mode:** Always bidirectional 
-- **Graphics:** Arithmetic Combinator with single red led on display
+- **Circuit Connections:** i2 terminals (red out, green out)
+- **Graphics:** Constant Combinator with single red led on display
 - **Stack Size:** 50
 - **Rocket Capacity:** 50
 
 **Configuration UI:**
-- Title: "Communication Settings"
-- Multi-select checkbox list of all discovered planets
-- "Select All" / "Clear All" buttons
-- Input and output signal grids should be on the bottom of the gui
+- Readonly signal out grid
 
 **Signal Behavior:**
-- passes input signals to output signals with no alterations:
+- Output signals based on running statistics of ghost count on the smae surface
 
 **Implementation Critical:**
 ```lua
--- Use standard combinator prototype as base
+-- Start registering ghosts immediatly before the technology is researched
 -- Persist state across save/load
--- Update GUI layout dynamically when and_or toggled
 ```
 
-### Key Principles
-1. **Preserve wire separation** - Red and green networks never mix
-2. **MAX aggregation** - Multiple sources MAX their signals
-
 ## Critical Implementation Warnings
-
-### DO NOT Attempt:
-1. **Creating real interrupts** - Logistics combinator replaces this need
-3. **Direct circuit network manipulation** - Use entity connectors
-4. **GUI replacement** - Use companion windows/overlays
 
 ### MUST Handle:
 1. **Entity lifecycle events** - Cleanup when entities destroyed
@@ -65,19 +51,26 @@ This is a template.  We will generate one entity with a simple gui as an example
 ## Architecture Notes
 
 ### Global State Structure
+For each surface maintain a list of ghost combinators and active_ghosts.  Each entity type will have a slot id to update the slot in the constant combinator.
+Every 5-10 seconds we will run a process to remove entity names that are at zero and compress the slot numbers to avoid gaps long term
 ```lua
 sotrage.<modname> = {
-  passthrough_receivers = {
-    [platform_unit_number] = {
-      configured_surfaces = {}, -- surface indices
-      entity = entity
+  ghost_combinator_data= {
+    [surface_id] = {
+      ghost_combinators = {
+        entity
+      }
+      any_changes = true/false
+      active_ghosts = {
+        entity_name -> slot_id,count,changed
+      }
     }
   },
 ```
 
 ### Performance Optimizations
-1. Use filters when registering events where possible
-2. Limit GUI updates to when GUI is open
+we will register every ghost in on_built() and update the data structure.  we will limit redundant checks and ensure speed of the update is critical.
+We will update the combinator slots every tick not every ghost.  we will use the changed flag on the active ghosts dictionary to limit the updates for speed, clearing them as needed. (iterate over active ghost keys and if changed iterate over the combinators)
 
 ## Edge Cases & Solutions
 

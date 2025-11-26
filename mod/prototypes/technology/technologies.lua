@@ -1,5 +1,5 @@
 -- Technology Definitions for Mission Control Mod
--- Defines all technologies and their unlocks for the example passthrough combinator
+-- Defines all technologies and their unlocks for the Ghost Combinator
 --
 -- This file extends the data phase with technology prototypes that gate access
 -- to the mod's features behind research progression.
@@ -13,26 +13,26 @@ data:extend({
 
         -- Internal name used for references and prerequisites
         -- Must match the name used in recipe unlocks and other references
-        name = "noop-example",
+        name = "ghost-combinator",
 
         -- Technology icon displayed in the research queue
-        -- Using base game's arithmetic combinator icon as specified
+        -- Using base game's constant combinator icon as placeholder
         -- icon_size MUST be specified when using icon (Factorio 2.0 requirement)
-        icon = "__base__/graphics/icons/arithmetic-combinator.png",
+        icon = "__base__/graphics/icons/constant-combinator.png",
         icon_size = 64,  -- Standard icon size for technologies
 
         -- Technologies that must be researched before this one becomes available
-        -- space-science-pack: Ensures player has reached space platform stage
         -- logistic-system: Ensures player has basic logistics infrastructure
+        -- production-science-pack: Gates mid-game access
         prerequisites = {
-            "space-science-pack",
-            "logistic-system"
+            "logistic-system",
+            "production-science-pack"
         },
 
         -- Research cost configuration
         unit = {
-            -- Number of research cycles required (1000 cycles)
-            count = 1,
+            -- Number of research cycles required (500 cycles)
+            count = 500,
 
             -- Science packs required per research cycle
             -- Each cycle consumes 1 of each pack listed below
@@ -40,25 +40,23 @@ data:extend({
             ingredients = {
                 {"automation-science-pack", 1},
                 {"logistic-science-pack", 1},
-                {"military-science-pack", 1},
                 {"chemical-science-pack", 1},
                 {"production-science-pack", 1},
-                {"utility-science-pack", 1},
-                {"space-science-pack", 1}
+                {"utility-science-pack", 1}
             },
 
             -- Time in ticks for each research cycle (60 ticks = 1 second)
             -- This sets research time to 1 second per cycle
-            time = 60
+            time = 30
         },
 
         -- Effects applied when technology is researched
-        -- This unlocks the recipe for the passthrough-combinator entity
+        -- This unlocks the recipe for the ghost-combinator entity
         effects = {
             {
                 type = "unlock-recipe",
                 -- Recipe name must match the recipe prototype defined in prototypes/recipe/
-                recipe = "passthrough-combinator"
+                recipe = "ghost-combinator"
             }
         },
 
