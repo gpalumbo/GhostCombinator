@@ -198,4 +198,133 @@ script.on_nth_tick(300, function(event)
     gc_control.compact_ghost_slots(event)
 end)
 
+-----------------------------------------------------------
+-- DEBUG COMMANDS
+-----------------------------------------------------------
+
+-- /gc-ghost-state - Dumps the ghost_combinator.ghosts data structure
+commands.add_command("gc-ghost-state", "Dumps the ghost combinator ghost tracking state", function(command)
+    local player = game.get_player(command.player_index)
+    if not player then return end
+
+    if not storage.ghost_combinator then
+        player.print("[Ghost Combinator] No ghost data (storage.ghost_combinator is nil)")
+        return
+    end
+
+    -- Build a summary structure (avoid printing entity references directly)
+    local summary = {}
+    for surface_index, surface_data in pairs(storage.ghost_combinator) do
+        local surface = game.surfaces[surface_index]
+        local surface_name = surface and surface.name or ("surface_" .. surface_index)
+
+        local combinator_count = 0
+        if surface_data.combinators then
+            for _ in pairs(surface_data.combinators) do
+                combinator_count = combinator_count + 1
+            end
+        end
+
+        summary[surface_name] = {
+            surface_index = surface_index,
+            combinator_count = combinator_count,
+            next_slot = surface_data.next_slot,
+            any_changes = surface_data.any_changes,
+            ghosts = surface_data.ghosts or {}
+        }
+    end
+
+    -- Add registration count
+    local reg_count = 0
+    if storage.ghost_registrations then
+        for _ in pairs(storage.ghost_registrations) do
+            reg_count = reg_count + 1
+        end
+    end
+    summary._ghost_registrations_count = reg_count
+
+    player.print("[Ghost Combinator] Ghost State:")
+    player.print(serpent.block(summary))
+end)
+
+-- /gc-ghost-clear [surface_id] - Clears ghosts on a surface (or all if no surface specified)
+commands.add_command("gc-ghost-clear", "Clears ghost tracking data. Usage: /gc-ghost-clear [surface_id]", function(command)
+    local player = game.get_player(command.player_index)
+    if not player then return end
+
+    if not storage.ghost_combinator then
+        player.print("[Ghost Combinator] No ghost data to clear")
+        return
+    end
+
+    local surface_id = nil
+    if command.parameter and command.parameter ~= "" then
+        surface_id = tonumber(command.parameter)
+        if not surface_id then
+            player.print("[Ghost Combinator] Invalid surface_id: " .. command.parameter)
+            return
+        end
+    end
+
+    if surface_id then
+        -- Clear specific surface
+        local surface_data = storage.ghost_combinator[surface_id]
+        if surface_data then
+            local old_count = 0
+            if surface_data.ghosts then
+                for _ in pairs(surface_data.ghosts) do
+                    old_count = old_count + 1
+                end
+            end
+
+            surface_data.ghosts = {}
+            surface_data.next_slot = 1
+            surface_data.any_changes = true
+
+            -- Also clear ghost registrations for this surface
+            local cleared_regs = 0
+            if storage.ghost_registrations then
+                for reg_num, reg_info in pairs(storage.ghost_registrations) do
+                    if reg_info.surface == surface_id then
+                        storage.ghost_registrations[reg_num] = nil
+                        cleared_regs = cleared_regs + 1
+                    end
+                end
+            end
+            player.print("[Ghost Combinator] Cleared " .. old_count .. " ghost entries and " ..
+                cleared_regs .. " registrations from surface " .. surface_id)
+        else
+            player.print("[Ghost Combinator] No data for surface " .. surface_id)
+        end
+    else
+        -- Clear all surfaces
+        local total_cleared = 0
+        local surfaces_cleared = 0
+
+        for surface_index, surface_data in pairs(storage.ghost_combinator) do
+            if surface_data.ghosts then
+                for _ in pairs(surface_data.ghosts) do
+                    total_cleared = total_cleared + 1
+                end
+            end
+            surface_data.ghosts = {}
+            surface_data.next_slot = 1
+            surface_data.any_changes = true
+            surfaces_cleared = surfaces_cleared + 1
+        end
+
+        -- Clear all ghost registrations
+        local cleared_regs = 0
+        if storage.ghost_registrations then
+            for _ in pairs(storage.ghost_registrations) do
+                cleared_regs = cleared_regs + 1
+            end
+            storage.ghost_registrations = {}
+        end
+
+        player.print("[Ghost Combinator] Cleared " .. total_cleared .. " ghost entries and " ..
+            cleared_regs .. " registrations from " .. surfaces_cleared .. " surfaces")
+    end
+end)
+
 log("[ghost-combinator] control.lua loaded")
