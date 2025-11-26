@@ -32,7 +32,7 @@ data:extend({
         -- Research cost configuration
         unit = {
             -- Number of research cycles required (500 cycles)
-            count = 500,
+            count = 5,
 
             -- Science packs required per research cycle
             -- Each cycle consumes 1 of each pack listed below
@@ -47,7 +47,7 @@ data:extend({
 
             -- Time in ticks for each research cycle (60 ticks = 1 second)
             -- This sets research time to 1 second per cycle
-            time = 30
+            time = 3
         },
 
         -- Effects applied when technology is researched

@@ -124,6 +124,7 @@ script.on_event(defines.events.on_player_setup_blueprint, function(event)
     gc_control.on_player_setup_blueprint(event)
 end)
 
+-- NOTE: on_entity_settings_pasted does NOT support filtering in Factorio 2.0
 script.on_event(defines.events.on_entity_settings_pasted, function(event)
     local source = event.source
     local destination = event.destination
@@ -136,7 +137,7 @@ script.on_event(defines.events.on_entity_settings_pasted, function(event)
        entity_lib.is_type(destination, GHOST_COMBINATOR) then
         gc_control.on_entity_settings_pasted(event)
     end
-end, combinator_filter)
+end)
 
 script.on_event(defines.events.on_entity_cloned, function(event)
     local source = event.source

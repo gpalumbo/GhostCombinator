@@ -4,6 +4,7 @@
 
 local flib_gui = require("__flib__.gui")
 local gui_entity = require("lib.gui.gui_entity")
+local gui_circuit_inputs = require("lib.gui.gui_circuit_inputs")
 local entity_lib = require("lib.entity_lib")
 local globals = require("scripts.globals")
 local gc_storage = require("scripts.ghost_combinator.storage")
@@ -27,28 +28,37 @@ local function get_ghost_data(surface_index)
     return storage.ghost_combinator[surface_index]
 end
 
---- Convert entity name to sprite path for GUI display
---- Tries item sprite first, then entity sprite
---- @param entity_name string The entity name
---- @return string Sprite path
-local function entity_name_to_sprite(entity_name)
-    -- Try item sprite first (most entities have item representations)
-    local item_proto = game.item_prototypes[entity_name]
-    if item_proto then
-        return "item/" .. entity_name
+--- Convert ghost data to signal format for GUI display
+--- @param surface_index number The surface index
+--- @return table Array of signals in format {signal = SignalID, count = int}
+local function get_ghost_signals(surface_index)
+    local signals = {}
+    local ghost_data = get_ghost_data(surface_index)
+
+    log("[ghost_combinator/gui] DEBUG ghost_data for surface " .. surface_index .. ": " .. serpent.block(ghost_data))
+
+    if not ghost_data or not ghost_data.ghosts then
+        log("[ghost_combinator/gui] DEBUG no ghost_data or ghost_data.ghosts")
+        return signals
     end
 
-    -- Fall back to entity sprite
-    local entity_proto = game.entity_prototypes[entity_name]
-    if entity_proto then
-        return "entity/" .. entity_name
+    -- Convert to signal format expected by gui_circuit_inputs
+    for _, ghost_info in pairs(ghost_data.ghosts) do
+        if ghost_info and ghost_info.count > 0 then
+            -- Use "item" signal type - most ghosts have item representations
+            table.insert(signals, {
+                signal = { type = "item", name = ghost_info.name, quality = ghost_info.quality },
+                count = ghost_info.count
+            })
+        end
     end
 
-    -- Ultimate fallback - use virtual signal sprite
-    return "virtual-signal/signal-unknown"
+    log("[ghost_combinator/gui] DEBUG signals: " .. serpent.block(signals))
+
+    return signals
 end
 
---- Create signal grid display for ghost counts
+--- Create signal grid display for ghost counts using shared gui_circuit_inputs
 --- @param parent LuaGuiElement Parent element to add grid to
 --- @param entity LuaEntity The ghost combinator entity
 local function create_signal_grid(parent, entity)
@@ -57,72 +67,10 @@ local function create_signal_grid(parent, entity)
     end
 
     local surface_index = entity.surface.index
-    local ghost_data = get_ghost_data(surface_index)
+    local signals = get_ghost_signals(surface_index)
 
-    -- Create scroll pane for signals
-    local scroll = parent.add{
-        type = "scroll-pane",
-        style = "flib_naked_scroll_pane_no_padding"
-    }
-    scroll.style.maximal_height = 300
-    scroll.style.minimal_width = 400
-    scroll.style.horizontally_stretchable = true
-
-    -- Create table grid with 10 columns (matches vanilla constant combinator)
-    local signal_table = scroll.add{
-        type = "table",
-        name = "ghost_signal_grid",
-        column_count = 10
-    }
-    signal_table.style.horizontal_spacing = 0
-    signal_table.style.vertical_spacing = 0
-    signal_table.style.cell_padding = 0
-
-    -- Count signals added
-    local signal_count = 0
-
-    -- Add signal buttons for non-zero ghost counts
-    if ghost_data and ghost_data.ghosts then
-        -- Sort ghost names for consistent display
-        local sorted_ghosts = {}
-        for ghost_name, _ in pairs(ghost_data.ghosts) do
-            table.insert(sorted_ghosts, ghost_name)
-        end
-        table.sort(sorted_ghosts)
-
-        -- Add signals
-        for _, ghost_name in ipairs(sorted_ghosts) do
-            local ghost_info = ghost_data.ghosts[ghost_name]
-            if ghost_info and ghost_info.count > 0 then
-                local sprite_path = entity_name_to_sprite(ghost_name)
-
-                signal_table.add{
-                    type = "sprite-button",
-                    sprite = sprite_path,
-                    number = ghost_info.count,
-                    style = "slot_button",
-                    enabled = false, -- Read-only
-                    tooltip = {"", "[entity=", ghost_name, "] ", ghost_info.count}
-                }
-
-                signal_count = signal_count + 1
-            end
-        end
-    end
-
-    -- If no signals, show message
-    if signal_count == 0 then
-        scroll.clear()
-        local no_signal_label = scroll.add{
-            type = "label",
-            caption = {"", "No ghosts on this surface"}
-        }
-        no_signal_label.style.font_color = {r = 0.6, g = 0.6, b = 0.6}
-        no_signal_label.style.top_margin = 8
-        no_signal_label.style.left_margin = 8
-    end
-
-    return scroll
+    -- Use shared signal sub-grid from gui_circuit_inputs (no wire color for output display)
+    return gui_circuit_inputs.create_signal_sub_grid(parent, signals, "none", "ghost_signal_grid")
 end
 
 --- Create the GUI for a ghost combinator

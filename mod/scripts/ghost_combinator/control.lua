@@ -49,12 +49,14 @@ local function initialize_combinator_slots(combinator, ghosts)
 
     -- Write ALL slots (ignore changed flag - this is initialization)
     local slot_count = 0
-    for ghost_name, ghost_data in pairs(ghosts) do
-        if ghost_data.count > 0 then
+    for ghost_key, ghost_data in pairs(ghosts) do
+        if ghost_data.count > 0 and ghost_data.name then
+            -- Use stored entity name and quality
             local filter = {
                 value = {
                     type = "item",
-                    name = ghost_name
+                    name = ghost_data.name,
+                    quality = ghost_data.quality or "normal"
                 },
                 min = ghost_data.count
             }
@@ -84,12 +86,13 @@ function control.on_ghost_built(event)
 
     local ghost_name = entity.ghost_name
     local surface_index = entity.surface.index
+    local quality_name = entity.quality and entity.quality.name or "normal"
 
-    -- Increment ghost count
-    gc_storage.increment_ghost(surface_index, ghost_name)
+    -- Increment ghost count (track by name + quality)
+    gc_storage.increment_ghost(surface_index, ghost_name, quality_name)
 
     -- Debug logging (can be disabled for production)
-    -- log("[ghost_combinator] Ghost built: " .. ghost_name .. " on surface " .. surface_index)
+    -- log("[ghost_combinator] Ghost built: " .. ghost_name .. " (" .. quality_name .. ") on surface " .. surface_index)
 end
 
 --- Handle ghost entity removed (mined, canceled, etc.)
@@ -105,12 +108,13 @@ function control.on_ghost_removed(event)
 
     local ghost_name = entity.ghost_name
     local surface_index = entity.surface.index
+    local quality_name = entity.quality and entity.quality.name or "normal"
 
-    -- Decrement ghost count
-    gc_storage.decrement_ghost(surface_index, ghost_name)
+    -- Decrement ghost count (track by name + quality)
+    gc_storage.decrement_ghost(surface_index, ghost_name, quality_name)
 
     -- Debug logging (can be disabled for production)
-    -- log("[ghost_combinator] Ghost removed: " .. ghost_name .. " on surface " .. surface_index)
+    -- log("[ghost_combinator] Ghost removed: " .. ghost_name .. " (" .. quality_name .. ") on surface " .. surface_index)
 end
 
 --- Handle ghost revived (became real entity)
@@ -257,8 +261,8 @@ function control.update_surface_combinators(surface_index, surface_data)
     end
 
     -- Clear changed flags on all ghost entries
-    for ghost_name, _ in pairs(surface_data.ghosts) do
-        gc_storage.clear_ghost_changed(surface_index, ghost_name)
+    for ghost_key, _ in pairs(surface_data.ghosts) do
+        gc_storage.clear_ghost_changed(surface_index, ghost_key)
     end
 
     if updated_count > 0 then
@@ -297,24 +301,36 @@ function control.update_combinator_slots(combinator, ghosts)
     local updates = 0
     local clears = 0
 
-    for ghost_name, ghost_data in pairs(ghosts) do
+    for ghost_key, ghost_data in pairs(ghosts) do
         -- Only update if changed
         if ghost_data.changed then
             local slot_index = ghost_data.slot
             local count = ghost_data.count
 
             if count > 0 then
-                -- Set slot with ghost item signal
-                -- LogisticFilter format: {value = SignalFilter, min = count}
-                local filter = {
-                    value = {
-                        type = "item",
-                        name = ghost_name
-                    },
-                    min = count
-                }
+                -- Get the actual entity name and quality from stored data
+                -- ghost_data.name is the entity's ghost_name, ghost_data.quality is its quality
+                local entity_name = ghost_data.name
+                local quality_name = ghost_data.quality or "normal"
 
-                section.set_slot(slot_index, filter)
+                if not entity_name then
+                    -- Skip if no name stored (shouldn't happen, but safety check)
+                    log("[ghost_combinator] WARNING: No entity name stored for ghost entry")
+                else
+                    -- Set slot with ghost item signal
+                    -- LogisticFilter format: {value = SignalFilter, min = count}
+                    -- CRITICAL: Must specify quality explicitly to avoid "non-trivial filter" error
+                    local filter = {
+                        value = {
+                            type = "item",
+                            name = entity_name,
+                            quality = quality_name
+                        },
+                        min = count
+                    }
+
+                    section.set_slot(slot_index, filter)
+                end
                 updates = updates + 1
             else
                 -- Clear slot if count is zero

@@ -7,7 +7,13 @@
 --     [surface_index] = {
 --         combinators = { [unit_number] = entity, ... },
 --         ghosts = {
---             [ghost_name] = { count = N, slot = M, changed = true/false },
+--             ["entity_name:quality"] = {
+--                 count = N,
+--                 slot = M,
+--                 changed = true/false,
+--                 name = "entity_name",     -- Original ghost_name for signal
+--                 quality = "quality_name"  -- Quality for signal
+--             },
 --         },
 --         any_changes = false,
 --         next_slot = 1,
@@ -138,21 +144,26 @@ end
 -- Ghost Tracking Functions
 --------------------------------------------------------------------------------
 
---- Increment ghost count for a specific ghost type
+--- Increment ghost count for a specific ghost type and quality
 --- CRITICAL: This is called for EVERY ghost built - must be FAST!
 --- @param surface_index number The surface index
 --- @param ghost_name string The ghost entity name
-function gc_storage.increment_ghost(surface_index, ghost_name)
+--- @param quality_name string The quality name (e.g., "normal", "uncommon", "rare", "epic", "legendary")
+function gc_storage.increment_ghost(surface_index, ghost_name, quality_name)
     if not surface_index or not ghost_name then
         return
     end
+
+    quality_name = quality_name or "normal"
 
     local surface_data = gc_storage.get_surface_data(surface_index)
     if not surface_data then
         return
     end
 
-    local ghost_entry = surface_data.ghosts[ghost_name]
+    -- Use "name:quality" as key to track different qualities separately
+    local ghost_key = ghost_name .. ":" .. quality_name
+    local ghost_entry = surface_data.ghosts[ghost_key]
 
     if ghost_entry then
         -- Increment existing ghost
@@ -161,10 +172,12 @@ function gc_storage.increment_ghost(surface_index, ghost_name)
     else
         -- New ghost type - assign next available slot
         local slot = surface_data.next_slot
-        surface_data.ghosts[ghost_name] = {
+        surface_data.ghosts[ghost_key] = {
             count = 1,
             slot = slot,
-            changed = true
+            changed = true,
+            name = ghost_name,      -- Store original name for signal
+            quality = quality_name  -- Store quality for signal
         }
         surface_data.next_slot = slot + 1
     end
@@ -172,21 +185,26 @@ function gc_storage.increment_ghost(surface_index, ghost_name)
     surface_data.any_changes = true
 end
 
---- Decrement ghost count for a specific ghost type
+--- Decrement ghost count for a specific ghost type and quality
 --- CRITICAL: This is called for EVERY ghost removed - must be FAST!
 --- @param surface_index number The surface index
 --- @param ghost_name string The ghost entity name
-function gc_storage.decrement_ghost(surface_index, ghost_name)
+--- @param quality_name string The quality name
+function gc_storage.decrement_ghost(surface_index, ghost_name, quality_name)
     if not surface_index or not ghost_name then
         return
     end
+
+    quality_name = quality_name or "normal"
 
     local surface_data = gc_storage.get_surface_data(surface_index)
     if not surface_data then
         return
     end
 
-    local ghost_entry = surface_data.ghosts[ghost_name]
+    -- Use "name:quality" as key
+    local ghost_key = ghost_name .. ":" .. quality_name
+    local ghost_entry = surface_data.ghosts[ghost_key]
 
     if ghost_entry then
         ghost_entry.count = math.max(0, ghost_entry.count - 1)
@@ -258,9 +276,9 @@ end
 
 --- Clear the changed flag for a specific ghost entry
 --- @param surface_index number The surface index
---- @param ghost_name string The ghost entity name
-function gc_storage.clear_ghost_changed(surface_index, ghost_name)
-    if not surface_index or not ghost_name then
+--- @param ghost_key string The ghost key ("entity_name:quality")
+function gc_storage.clear_ghost_changed(surface_index, ghost_key)
+    if not surface_index or not ghost_key then
         return
     end
 
@@ -269,7 +287,7 @@ function gc_storage.clear_ghost_changed(surface_index, ghost_name)
         return
     end
 
-    local ghost_entry = surface_data.ghosts[ghost_name]
+    local ghost_entry = surface_data.ghosts[ghost_key]
     if ghost_entry then
         ghost_entry.changed = false
     end
