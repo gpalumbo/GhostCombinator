@@ -1,0 +1,9 @@
+{
+  "name": "example-mod",
+  "version": "0.1.0",
+  "title": "Example entity mod base",
+  "author": "Gordon Palumbo",
+  "factorio_version": "2.0",
+  "dependencies": ["base >= 2.0.0", "flib >= 0.16.0"],
+  "description": "A template for basic entities"
+}
