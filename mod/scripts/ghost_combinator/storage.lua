@@ -22,6 +22,11 @@
 -- }
 -- NOTE: Entity names don't always match item names (e.g., "straight-rail" -> "rail")
 -- Multiple entity types may map to the same item, so they share a slot.
+--
+-- storage.ghost_registrations = {
+--     [registration_number] = {surface_index, ghost_name, quality_name}
+-- }
+-- Used to track ghosts registered with register_on_object_destroyed
 
 local circuit_utils = require("lib.circuit_utils")
 
@@ -41,6 +46,7 @@ local COMPACT_INTERVAL = 300
 --- Called during on_init and on_configuration_changed events
 function gc_storage.init_storage()
     storage.ghost_combinator = storage.ghost_combinator or {}
+    storage.ghost_registrations = storage.ghost_registrations or {}
 end
 
 --------------------------------------------------------------------------------
@@ -414,6 +420,53 @@ function gc_storage.validate_and_cleanup(surface_index)
             end
         end
     end
+end
+
+--------------------------------------------------------------------------------
+-- Ghost Registration (for on_object_destroyed tracking)
+--------------------------------------------------------------------------------
+
+--- Register a ghost entity for destruction tracking
+--- Called when a ghost is built to track when it's destroyed/revived
+--- @param registration_number uint64 The registration number from script.register_on_object_destroyed
+--- @param surface_index number The surface index
+--- @param ghost_name string The ghost entity name
+--- @param quality_name string The quality name
+function gc_storage.register_ghost_entity(registration_number, surface_index, ghost_name, quality_name)
+    if not registration_number then
+        return
+    end
+
+    if not storage.ghost_registrations then
+        storage.ghost_registrations = {}
+    end
+
+    storage.ghost_registrations[registration_number] = {
+        surface = surface_index,
+        name = ghost_name,
+        quality = quality_name or "normal"
+    }
+end
+
+--- Get ghost registration info by registration number
+--- @param registration_number uint64 The registration number
+--- @return table|nil Ghost info {surface, name, quality} or nil if not found
+function gc_storage.get_ghost_registration(registration_number)
+    if not registration_number or not storage.ghost_registrations then
+        return nil
+    end
+
+    return storage.ghost_registrations[registration_number]
+end
+
+--- Unregister a ghost entity (after destruction event handled)
+--- @param registration_number uint64 The registration number
+function gc_storage.unregister_ghost_entity(registration_number)
+    if not registration_number or not storage.ghost_registrations then
+        return
+    end
+
+    storage.ghost_registrations[registration_number] = nil
 end
 
 return gc_storage

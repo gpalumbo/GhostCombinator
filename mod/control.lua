@@ -79,18 +79,16 @@ local function on_entity_built(event)
 end
 
 --- Unified handler for all entity removal events
---- Routes to ghost tracking OR combinator cleanup based on entity type
+--- Only handles combinator cleanup - ghost tracking uses on_object_destroyed
 --- @param event EventData Event data with entity
 local function on_entity_removed(event)
     local entity = event.entity
     if not entity or not entity.valid then return end
 
-    -- Route to appropriate handler based on entity type
-    if entity.type == "entity-ghost" then
-        -- Track ALL ghost removals (no filter - runs on every ghost removed)
-        gc_control.on_ghost_removed(event)
-    elseif entity.name == GHOST_COMBINATOR then
-        -- Handle combinator destruction
+    -- Only handle combinator destruction here
+    -- Ghost tracking is handled by on_object_destroyed which fires for ALL
+    -- destruction reasons including revive (ghost built into real entity)
+    if entity.name == GHOST_COMBINATOR then
         gc_control.on_combinator_removed(event)
     end
 end
@@ -102,11 +100,18 @@ script.on_event(defines.events.on_robot_built_entity, on_entity_built)
 script.on_event(defines.events.script_raised_built, on_entity_built)
 script.on_event(defines.events.script_raised_revive, on_entity_built)
 
--- Register destroy events WITHOUT filters to catch both ghosts and combinators
+-- Register destroy events for combinator cleanup only
+-- Ghost entities are tracked via register_on_object_destroyed instead
 script.on_event(defines.events.on_player_mined_entity, on_entity_removed)
 script.on_event(defines.events.on_robot_mined_entity, on_entity_removed)
 script.on_event(defines.events.on_entity_died, on_entity_removed)
 script.on_event(defines.events.script_raised_destroy, on_entity_removed)
+
+-- Register on_object_destroyed for ghost tracking
+-- This fires when ANY registered object is destroyed, including ghost revives
+script.on_event(defines.events.on_object_destroyed, function(event)
+    gc_control.on_object_destroyed(event)
+end)
 
 -----------------------------------------------------------
 -- COMBINATOR-SPECIFIC EVENTS (WITH FILTERS)

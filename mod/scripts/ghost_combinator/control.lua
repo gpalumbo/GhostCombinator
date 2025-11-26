@@ -91,47 +91,37 @@ function control.on_ghost_built(event)
     -- Increment ghost count (track by name + quality)
     gc_storage.increment_ghost(surface_index, ghost_name, quality_name)
 
+    -- Register for on_object_destroyed to detect when ghost is revived/destroyed
+    -- This fires for ALL destruction reasons including revive (ghost built into real entity)
+    local reg_number = script.register_on_object_destroyed(entity)
+    gc_storage.register_ghost_entity(reg_number, surface_index, ghost_name, quality_name)
+
     -- Debug logging (can be disabled for production)
     -- log("[ghost_combinator] Ghost built: " .. ghost_name .. " (" .. quality_name .. ") on surface " .. surface_index)
 end
 
---- Handle ghost entity removed (mined, canceled, etc.)
---- CRITICAL: This is called for EVERY entity removed - type check MUST be first!
---- @param event EventData Event data containing entity
-function control.on_ghost_removed(event)
-    local entity = event.entity
+-- NOTE: on_ghost_removed is no longer used - ghost destruction tracking is now handled
+-- entirely by on_object_destroyed which fires for ALL destruction reasons including
+-- revive (ghost built into real entity), mined, died, script-destroyed, etc.
 
-    -- FAST rejection - type check MUST be first line!
-    if not entity or entity.type ~= "entity-ghost" then
-        return
+--- Handle on_object_destroyed event for registered ghosts
+--- This fires when ANY registered object is destroyed, including ghost revives
+--- @param event EventData.on_object_destroyed Event containing registration_number
+function control.on_object_destroyed(event)
+    local registration_number = event.registration_number
+
+    -- Look up if this was a tracked ghost
+    local ghost_info = gc_storage.get_ghost_registration(registration_number)
+    if ghost_info then
+        -- Decrement ghost count - this ghost was destroyed/revived
+        gc_storage.decrement_ghost(ghost_info.surface, ghost_info.name, ghost_info.quality)
+
+        -- Clean up registration
+        gc_storage.unregister_ghost_entity(registration_number)
+
+        -- Debug logging (can be disabled for production)
+        -- log("[ghost_combinator] Ghost destroyed via on_object_destroyed: " .. ghost_info.name .. " (" .. ghost_info.quality .. ") on surface " .. ghost_info.surface)
     end
-
-    local ghost_name = entity.ghost_name
-    local surface_index = entity.surface.index
-    local quality_name = entity.quality and entity.quality.name or "normal"
-
-    -- Decrement ghost count (track by name + quality)
-    gc_storage.decrement_ghost(surface_index, ghost_name, quality_name)
-
-    -- Debug logging (can be disabled for production)
-    -- log("[ghost_combinator] Ghost removed: " .. ghost_name .. " (" .. quality_name .. ") on surface " .. surface_index)
-end
-
---- Handle ghost revived (became real entity)
---- This is called when a ghost is built by a robot or player
---- NOTE: script_raised_revive provides both 'entity' (new) and optionally 'ghost' (if it existed)
---- @param event EventData Event data containing entity (and possibly ghost for script_raised_revive)
-function control.on_ghost_revived(event)
-    -- For script_raised_revive, we get the created entity, not the ghost
-    -- The ghost is already destroyed at this point
-    -- We need to check if this was previously a ghost (via tags or other means)
-    -- For now, we rely on script_raised_built being called instead
-    -- This handler is kept for potential future use
-
-    -- Note: In Factorio 2.0, when a ghost is revived:
-    -- 1. on_robot_built_entity is called with the new entity
-    -- 2. The ghost is automatically removed
-    -- So we don't need special handling here - the normal build flow handles it
 end
 
 -----------------------------------------------------------
