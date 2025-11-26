@@ -152,16 +152,11 @@ function control.on_combinator_built(event)
     local success = gc_storage.register_combinator(entity)
 
     if success then
-        log("[ghost_combinator] Combinator built: " .. entity.unit_number .. " on surface " .. entity.surface.index)
-
         -- Initialize combinator with current ghost data
         local surface_index = entity.surface.index
         local surface_data = gc_storage.get_surface_data(surface_index)
         if surface_data and surface_data.ghosts then
-            local success, slot_count = initialize_combinator_slots(entity, surface_data.ghosts)
-            if success then
-                log("[ghost_combinator] Initialized combinator " .. entity.unit_number .. " with " .. (slot_count or 0) .. " ghost types")
-            end
+            initialize_combinator_slots(entity, surface_data.ghosts)
         end
     end
 end
@@ -197,8 +192,6 @@ function control.on_combinator_removed(event)
 
     -- Unregister from storage
     gc_storage.unregister_combinator(unit_number, surface_index)
-
-    log("[ghost_combinator] Combinator removed: " .. unit_number .. " from surface " .. surface_index)
 end
 
 -----------------------------------------------------------
@@ -255,9 +248,6 @@ function control.update_surface_combinators(surface_index, surface_data)
         gc_storage.clear_ghost_changed(surface_index, ghost_key)
     end
 
-    if updated_count > 0 then
-        log("[ghost_combinator] Updated " .. updated_count .. " combinators on surface " .. surface_index)
-    end
 end
 
 --- Update a single combinator's slots with current ghost data
@@ -327,10 +317,6 @@ function control.update_combinator_slots(combinator, ghosts)
                 clears = clears + 1
             end
         end
-    end
-
-    if updates > 0 or clears > 0 then
-        log("[ghost_combinator] Updated combinator " .. combinator.unit_number .. ": " .. updates .. " set, " .. clears .. " cleared")
     end
 
     return true

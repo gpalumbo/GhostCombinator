@@ -41,5 +41,3 @@ ghost_combinator.flags = {
 
 -- Add to data
 data:extend({ghost_combinator})
-
-log("[mission-control] prototypes/entity/ghost_combinator.lua loaded")

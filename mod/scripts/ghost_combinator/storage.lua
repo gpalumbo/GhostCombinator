@@ -123,7 +123,6 @@ function gc_storage.register_combinator(entity)
     -- Mark that we need to update this combinator with current ghost data
     surface_data.any_changes = true
 
-    log("[ghost_combinator] Registered combinator " .. unit_number .. " on surface " .. surface_index)
     return true
 end
 
@@ -147,7 +146,6 @@ function gc_storage.unregister_combinator(unit_number, surface_index)
     end
 
     surface_data.combinators[unit_number] = nil
-    log("[ghost_combinator] Unregistered combinator " .. unit_number .. " from surface " .. surface_index)
 end
 
 --------------------------------------------------------------------------------
@@ -366,9 +364,6 @@ function gc_storage.compact_slots(surface_index, current_tick)
 
         surface_data.next_slot = new_slot
         surface_data.any_changes = true
-
-        log("[ghost_combinator] Compacted " .. removed_count .. " slots on surface " .. surface_index ..
-            " (old max: " .. old_max_slot .. ", new max: " .. (new_slot - 1) .. ")")
     end
 
     return removed_count, old_max_slot, surface_data.next_slot - 1
@@ -415,9 +410,6 @@ function gc_storage.validate_and_cleanup(surface_index)
                 surface_data.combinators[unit_number] = nil
             end
 
-            if #invalid_units > 0 then
-                log("[ghost_combinator] Cleaned up " .. #invalid_units .. " invalid combinators on surface " .. idx)
-            end
         end
     end
 end

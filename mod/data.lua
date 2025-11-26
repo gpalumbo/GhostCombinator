@@ -16,8 +16,6 @@ require("prototypes.recipe.ghost_combinator")
 -- Load technology prototypes
 require("prototypes.technology.technologies")
 
-log("[ghost_combinator] data.lua loaded")
-
 data:extend({
   {
     type = "custom-input",

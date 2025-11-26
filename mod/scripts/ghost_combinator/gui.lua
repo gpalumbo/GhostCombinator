@@ -35,10 +35,7 @@ local function get_ghost_signals(surface_index)
     local signals = {}
     local ghost_data = get_ghost_data(surface_index)
 
-    log("[ghost_combinator/gui] DEBUG ghost_data for surface " .. surface_index .. ": " .. serpent.block(ghost_data))
-
     if not ghost_data or not ghost_data.ghosts then
-        log("[ghost_combinator/gui] DEBUG no ghost_data or ghost_data.ghosts")
         return signals
     end
 
@@ -52,8 +49,6 @@ local function get_ghost_signals(surface_index)
             })
         end
     end
-
-    log("[ghost_combinator/gui] DEBUG signals: " .. serpent.block(signals))
 
     return signals
 end
@@ -79,19 +74,15 @@ end
 --- @return table|nil Table of created elements, or nil on failure
 function gui.create_gui(player, entity)
     if not player or not player.valid then
-        log("[ghost_combinator/gui] create_gui: invalid player")
         return nil
     end
 
     if not entity or not entity.valid then
-        log("[ghost_combinator/gui] create_gui: invalid entity")
         return nil
     end
 
     -- Close existing GUI if open
     gui.close_gui(player)
-
-    log("[ghost_combinator/gui] Creating GUI for entity")
 
     -- Get power status for entity
     local power_status = gui_entity.get_power_status(entity)
@@ -260,8 +251,6 @@ function gui.create_gui(player, entity)
     -- Store GUI state via globals
     globals.set_player_gui_entity(player.index, entity, "ghost_combinator")
 
-    log("[ghost_combinator/gui] GUI created successfully for player " .. player.name)
-
     return elems
 end
 
@@ -275,7 +264,6 @@ function gui.close_gui(player)
     local frame = player.gui.screen[GUI_FRAME_NAME]
     if frame and frame.valid then
         frame.destroy()
-        log("[ghost_combinator/gui] GUI closed for player " .. player.name)
     end
 
     -- Clear the opened GUI reference
@@ -291,20 +279,17 @@ end
 --- @param player LuaPlayer
 function gui.refresh_gui(player)
     if not player or not player.valid then
-        log("[ghost_combinator/gui] refresh_gui: invalid player")
         return
     end
 
     local frame = player.gui.screen[GUI_FRAME_NAME]
     if not frame or not frame.valid then
-        log("[ghost_combinator/gui] refresh_gui: no GUI open")
         return
     end
 
     -- Get entity from stored state via globals
     local player_gui_state = globals.get_player_gui_state(player.index)
     if not player_gui_state then
-        log("[ghost_combinator/gui] refresh_gui: no valid entity in GUI state")
         gui.close_gui(player)
         return
     end
@@ -312,13 +297,11 @@ function gui.refresh_gui(player)
     local entity = player_gui_state.open_entity
 
     if not entity or not entity.valid then
-        log("[ghost_combinator/gui] refresh_gui: entity invalid")
         gui.close_gui(player)
         return
     end
 
     -- Recreate the GUI to update signals
-    log("[ghost_combinator/gui] Refreshing GUI")
     gui.create_gui(player, entity)
 end
 
@@ -335,13 +318,11 @@ local function get_entity_from_gui(frame)
     local position = tags.entity_position
 
     if not surface_index or not position then
-        log("[ghost_combinator/gui] get_entity_from_gui: missing tags")
         return nil
     end
 
     local surface = game.surfaces[surface_index]
     if not surface then
-        log("[ghost_combinator/gui] get_entity_from_gui: invalid surface")
         return nil
     end
 
@@ -356,7 +337,6 @@ local function get_entity_from_gui(frame)
         return entities[1]
     end
 
-    log("[ghost_combinator/gui] get_entity_from_gui: entity not found at position")
     return nil
 end
 
@@ -377,10 +357,8 @@ function gui.on_gui_click(event)
     local action = tags.action
 
     if action == "close" then
-        log("[ghost_combinator/gui] Close button clicked by " .. player.name)
         gui.close_gui(player)
     elseif action == "refresh" then
-        log("[ghost_combinator/gui] Refresh button clicked by " .. player.name)
         gui.refresh_gui(player)
     end
 end
@@ -393,8 +371,6 @@ function gui.on_gui_opened(event)
 
     local player = game.get_player(event.player_index)
     if not player then return end
-
-    log("[ghost_combinator/gui] GUI opened for entity by " .. player.name)
 
     -- Close the default entity GUI
     player.opened = nil
@@ -415,7 +391,6 @@ function gui.on_gui_closed(event)
     local player = game.get_player(event.player_index)
     if not player then return end
 
-    log("[ghost_combinator/gui] GUI closed by " .. player.name)
     gui.close_gui(player)
 end
 

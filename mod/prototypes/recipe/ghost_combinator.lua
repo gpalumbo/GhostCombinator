@@ -20,5 +20,3 @@ data:extend({
         }
     }
 })
-
-log("[mission-control] prototypes/recipe/ghost_combinator.lua loaded")

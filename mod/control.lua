@@ -326,5 +326,3 @@ commands.add_command("gc-ghost-clear", "Clears ghost tracking data. Usage: /gc-g
             cleared_regs .. " registrations from " .. surfaces_cleared .. " surfaces")
     end
 end)
-
-log("[ghost-combinator] control.lua loaded")

@@ -17,5 +17,3 @@ data:extend({
         stack_size = 50
     }
 })
-
-log("[mission-control] prototypes/item/ghost_combinator.lua loaded")
