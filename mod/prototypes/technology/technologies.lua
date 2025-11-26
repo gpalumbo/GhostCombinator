@@ -16,9 +16,9 @@ data:extend({
         name = "ghost-combinator",
 
         -- Technology icon displayed in the research queue
-        -- Using base game's constant combinator icon as placeholder
+        -- Custom ghost combinator icon
         -- icon_size MUST be specified when using icon (Factorio 2.0 requirement)
-        icon = "__base__/graphics/icons/constant-combinator.png",
+        icon = "__ghost-combinator__/graphics/entities/ghost-combinator-icon.png",
         icon_size = 64,  -- Standard icon size for technologies
 
         -- Technologies that must be researched before this one becomes available

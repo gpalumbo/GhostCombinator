@@ -5,8 +5,8 @@ data:extend({
     {
         type = "item",
         name = "ghost-combinator",
-        -- Using base constant combinator icon as placeholder
-        icon = "__base__/graphics/icons/constant-combinator.png",
+        -- Custom ghost combinator icon
+        icon = "__ghost-combinator__/graphics/entities/ghost-combinator-icon.png",
         icon_size = 64,
         -- Place in circuit network category
         subgroup = "circuit-network",

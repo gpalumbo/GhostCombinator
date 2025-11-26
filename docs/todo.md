@@ -17,7 +17,7 @@ Ghost Combinator implementation complete and ready for testing.
 - [x] Locale strings (EN)
 
 ## Pending / Future Work
-- [ ] Custom graphics (currently using base constant-combinator placeholder)
+- [x] Custom graphics (entity sprite + icon from mod/graphics/entities/)
 - [ ] Integration testing with blueprints
 - [ ] Performance profiling with large ghost counts
 - [ ] Multi-surface testing (Nauvis, Vulcanus, platforms)

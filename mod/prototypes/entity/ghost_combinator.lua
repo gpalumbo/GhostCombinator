@@ -38,6 +38,31 @@ ghost_combinator.flags = {
     "placeable-player",
     "player-creation"
 }
+        
+-- Custom sprites using ghost-combinator graphics
+-- Uses same structure as constant combinator: 4-way spritesheet with base shadow
+-- make_4way_animation_from_spritesheet is a global function defined by base in entities.lua
+ghost_combinator.sprites = make_4way_animation_from_spritesheet({
+    layers = {
+        -- Main sprite layer (custom ghost combinator graphics)
+        {
+            scale = 0.5,
+            filename = "__ghost-combinator__/graphics/entities/ghost-combinator.png",
+            width = 114,
+            height = 102,
+            shift = util.by_pixel(0, 5)
+        },
+        -- Shadow layer (reuse base constant combinator shadow)
+        {
+            scale = 0.5,
+            filename = "__base__/graphics/entity/combinator/constant-combinator-shadow.png",
+            width = 98,
+            height = 66,
+            shift = util.by_pixel(8.5, 5.5),
+            draw_as_shadow = true
+        }
+    }
+})
 
 -- Add to data
 data:extend({ghost_combinator})
