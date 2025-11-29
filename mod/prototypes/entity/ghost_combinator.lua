@@ -38,7 +38,7 @@ ghost_combinator.flags = {
     "placeable-player",
     "player-creation"
 }
-        
+
 -- Custom sprites using ghost-combinator graphics
 -- Uses same structure as constant combinator: 4-way spritesheet with base shadow
 -- make_4way_animation_from_spritesheet is a global function defined by base in entities.lua

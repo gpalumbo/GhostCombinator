@@ -1,0 +1,16 @@
+---------------------------------------------------------------------------------------------------
+Version: 0.1.2
+Date: 2025-11-29
+  Packaging Changes:
+    - Added changelog.txt for mod website
+    - Fixed typo in thumbnail file name
+---------------------------------------------------------------------------------------------------
+Version: 0.1.1
+Date: 2025-11-226
+  Packaging Changes:
+    - Added thumbnail.png for mod website
+---------------------------------------------------------------------------------------------------
+Version: 0.1.0
+Date: 2025-11-26
+  Major Features:
+    - Initial release
