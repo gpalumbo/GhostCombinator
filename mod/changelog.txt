@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.1.3
+Date: 2025-12-18
+  Internal update:
+    - synced library functions for consideration of pulling out into shared mod
+---------------------------------------------------------------------------------------------------
 Version: 0.1.2
 Date: 2025-11-29
   Packaging Changes:

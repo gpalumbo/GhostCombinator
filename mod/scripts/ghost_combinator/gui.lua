@@ -305,41 +305,6 @@ function gui.refresh_gui(player)
     gui.create_gui(player, entity)
 end
 
---- Get entity from GUI tags (helper for event handlers)
---- @param frame LuaGuiElement The GUI frame
---- @return LuaEntity|nil The entity, or nil if not found/invalid
-local function get_entity_from_gui(frame)
-    if not frame or not frame.valid or not frame.tags then
-        return nil
-    end
-
-    local tags = frame.tags
-    local surface_index = tags.entity_surface_index
-    local position = tags.entity_position
-
-    if not surface_index or not position then
-        return nil
-    end
-
-    local surface = game.surfaces[surface_index]
-    if not surface then
-        return nil
-    end
-
-    -- Find entity at position
-    local entities = surface.find_entities_filtered{
-        position = position,
-        radius = 0.5,
-        name = GHOST_COMBINATOR
-    }
-
-    if entities and #entities > 0 then
-        return entities[1]
-    end
-
-    return nil
-end
-
 -- GUI Event Handlers
 
 --- Handle GUI click events

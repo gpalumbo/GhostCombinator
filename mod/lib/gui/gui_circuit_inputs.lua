@@ -120,7 +120,7 @@ end
 --- @param entity LuaEntity The combinator entity to read signals from
 --- @param signal_grid_frame LuaGuiElement|nil Optional existing frame to reuse
 --- @param frame_name string Name for the signal grid frame element
---- @param connector_type string|nil Optional connector type (defaults to "combinator_input")
+--- @param connector_type string|nil Optional connector type (defaults to "combinator_input") - unused, kept for API compatibility
 --- @return table References to created elements {signal_grid_frame = LuaGuiElement}
 function gui_circuit_inputs.create_signal_grid(parent, entity, signal_grid_frame, frame_name, connector_type)
     -- Create frame for signal grid (or reuse existing)
@@ -140,8 +140,8 @@ function gui_circuit_inputs.create_signal_grid(parent, entity, signal_grid_frame
     }
     signal_header.style.bottom_margin = 4
 
-    -- Get input signals from entity (defaults to "combinator_input" if connector_type not specified)
-    local signals = circuit_utils.get_input_signals_raw(entity, connector_type)
+    -- Get input signals from entity using raw format (preferred)
+    local signals = circuit_utils.get_input_signals_raw(entity)
 
     -- Create sub-grids for red and green wires
     gui_circuit_inputs.create_signal_sub_grid(grid_frame, signals.red, "red")

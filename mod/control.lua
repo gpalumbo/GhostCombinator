@@ -10,6 +10,7 @@ local gc_gui = require("scripts.ghost_combinator.gui")
 local globals = require("scripts.globals")
 local entity_lib = require("lib.entity_lib")
 local circuit_utils = require("lib.circuit_utils")
+local signal_utils = require("lib.signal_utils")
 
 -- Entity name constants
 local GHOST_COMBINATOR = "ghost-combinator"
@@ -24,7 +25,7 @@ script.on_event("gui-pipette-signal", function(event)
         if not player then return end
 
         -- Convert signal_id to PipetteID format
-        local pipette_id = circuit_utils.signal_to_prototype(signal_id)
+        local pipette_id = signal_utils.signal_to_prototype(signal_id)
 
         if pipette_id then
             -- Try pipette with error handling

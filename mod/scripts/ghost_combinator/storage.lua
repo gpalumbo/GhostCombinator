@@ -29,6 +29,7 @@
 -- Used to track ghosts registered with register_on_object_destroyed
 
 local circuit_utils = require("lib.circuit_utils")
+local signal_utils = require("lib.signal_utils")
 
 local gc_storage = {}
 
@@ -172,7 +173,7 @@ function gc_storage.increment_ghost(surface_index, ghost_name, quality_name)
     -- Look up the item name that places this entity
     -- Entity names don't always match item names (e.g., "straight-rail" -> "rail")
     -- Multiple entity types may map to the same item (e.g., straight-rail, curved-rail -> rail)
-    local item_name = circuit_utils.get_item_name_for_entity(ghost_name)
+    local item_name = signal_utils.get_item_name_for_entity(ghost_name)
 
     -- Use "item_name:quality" as key so entities sharing an item are combined
     local ghost_key = item_name .. ":" .. quality_name
@@ -216,7 +217,7 @@ function gc_storage.decrement_ghost(surface_index, ghost_name, quality_name)
     end
 
     -- Look up the item name that places this entity (must match increment_ghost)
-    local item_name = circuit_utils.get_item_name_for_entity(ghost_name)
+    local item_name = signal_utils.get_item_name_for_entity(ghost_name)
 
     -- Use "item_name:quality" as key (must match increment_ghost)
     local ghost_key = item_name .. ":" .. quality_name
