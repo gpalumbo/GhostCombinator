@@ -198,6 +198,12 @@ script.on_nth_tick(300, function(event)
     gc_control.compact_ghost_slots(event)
 end)
 
+-- Every 10 seconds (600 ticks): Full resync of combinator slots from storage truth
+-- Safety net that catches any desync between storage ghost data and combinator output
+script.on_nth_tick(600, function(event)
+    gc_control.full_resync_all(event)
+end)
+
 -----------------------------------------------------------
 -- DEBUG COMMANDS
 -----------------------------------------------------------

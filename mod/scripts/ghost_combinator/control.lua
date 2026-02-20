@@ -210,8 +210,15 @@ function control.on_tick(event)
     -- Process each surface that has changes
     for surface_index, surface_data in pairs(storage.ghost_combinator) do
         if surface_data.any_changes then
-            control.update_surface_combinators(surface_index, surface_data)
-            gc_storage.clear_changes_flag(surface_index)
+            local all_succeeded = control.update_surface_combinators(surface_index, surface_data)
+            -- Only clear flags if ALL combinators received the update.
+            -- If any combinator failed, keep flags so the next tick retries.
+            if all_succeeded then
+                for ghost_key, _ in pairs(surface_data.ghosts) do
+                    gc_storage.clear_ghost_changed(surface_index, ghost_key)
+                end
+                gc_storage.clear_changes_flag(surface_index)
+            end
         end
     end
 end
@@ -220,22 +227,23 @@ end
 --- Only updates slots that have changed
 --- @param surface_index number The surface index
 --- @param surface_data table The surface data table
+--- @return boolean True if ALL combinators were successfully updated
 function control.update_surface_combinators(surface_index, surface_data)
     -- Get all combinators on this surface
     local combinators = surface_data.combinators
 
     if not combinators then
-        return
+        return true
     end
 
-    local updated_count = 0
+    local all_succeeded = true
 
     -- Update each combinator
     for unit_number, combinator in pairs(combinators) do
         if combinator and combinator.valid then
             local success = control.update_combinator_slots(combinator, surface_data.ghosts)
-            if success then
-                updated_count = updated_count + 1
+            if not success then
+                all_succeeded = false
             end
         else
             -- Combinator became invalid, remove it
@@ -243,11 +251,9 @@ function control.update_surface_combinators(surface_index, surface_data)
         end
     end
 
-    -- Clear changed flags on all ghost entries
-    for ghost_key, _ in pairs(surface_data.ghosts) do
-        gc_storage.clear_ghost_changed(surface_index, ghost_key)
-    end
-
+    -- NOTE: Changed flag clearing is now handled by the caller (on_tick)
+    -- only when all_succeeded is true, preventing lost updates on failure
+    return all_succeeded
 end
 
 --- Update a single combinator's slots with current ghost data
@@ -357,6 +363,86 @@ function control.compact_ghost_slots(event)
                 end
             end
         end
+    end
+end
+
+-----------------------------------------------------------
+-- PERIODIC FULL RESYNC
+-- Safety net: rewrites ALL combinator slots from storage truth
+-- Catches any desync from failed incremental updates
+-----------------------------------------------------------
+
+--- Full resync a single surface: rewrite ALL slots on ALL combinators
+--- Ignores the 'changed' flag entirely - writes every ghost entry and clears
+--- orphaned slots up to the slot_high_water mark
+--- @param surface_index number The surface index
+--- @param surface_data table The surface data table
+function control.full_resync_surface(surface_index, surface_data)
+    local combinators = surface_data.combinators
+    if not combinators then
+        return
+    end
+
+    -- Build slot → filter lookup for all active ghosts (count > 0)
+    local slot_filters = {}
+    local current_max_slot = math.max(0, (surface_data.next_slot or 1) - 1)
+
+    for ghost_key, ghost_data in pairs(surface_data.ghosts) do
+        if ghost_data.count > 0 and ghost_data.item_name then
+            slot_filters[ghost_data.slot] = {
+                value = {
+                    type = "item",
+                    name = ghost_data.item_name,
+                    quality = ghost_data.quality or "normal"
+                },
+                min = ghost_data.count
+            }
+        end
+    end
+
+    -- Determine clearing range: highest slot that might have stale data
+    local clear_ceiling = math.max(current_max_slot, surface_data.slot_high_water or 0)
+
+    -- Resync each valid combinator
+    for unit_number, combinator in pairs(combinators) do
+        if combinator and combinator.valid then
+            local cb = combinator.get_control_behavior()
+            if cb then
+                local section = cb.get_section(1)
+                if not section then
+                    section = cb.add_section("")
+                end
+                if section then
+                    -- Write or clear every slot from 1 to clear_ceiling
+                    for slot_idx = 1, clear_ceiling do
+                        local filter = slot_filters[slot_idx]
+                        if filter then
+                            section.set_slot(slot_idx, filter)
+                        else
+                            section.clear_slot(slot_idx)
+                        end
+                    end
+                end
+            end
+        else
+            -- Clean up invalid combinator reference
+            surface_data.combinators[unit_number] = nil
+        end
+    end
+
+    -- Reset the high-water mark now that orphans are cleared
+    gc_storage.reset_slot_high_water(surface_index)
+end
+
+--- Full resync all surfaces - entry point for on_nth_tick handler
+--- @param event EventData.on_nth_tick
+function control.full_resync_all(event)
+    if not storage.ghost_combinator then
+        return
+    end
+
+    for surface_index, surface_data in pairs(storage.ghost_combinator) do
+        control.full_resync_surface(surface_index, surface_data)
     end
 end
 
