@@ -36,9 +36,6 @@ local gc_storage = {}
 -- Entity name constant
 local GHOST_COMBINATOR = "ghost-combinator"
 
--- Compaction interval (every 5 seconds = 300 ticks)
-local COMPACT_INTERVAL = 300
-
 --------------------------------------------------------------------------------
 -- Storage Initialization
 --------------------------------------------------------------------------------

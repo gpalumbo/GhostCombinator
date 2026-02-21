@@ -13,9 +13,6 @@ local GHOST_COMBINATOR = "ghost-combinator"
 -- Update interval for combinator slots (every tick for responsiveness)
 local UPDATE_INTERVAL = 1
 
--- Compaction interval (every 10 seconds)
-local COMPACT_INTERVAL = 600
-
 -----------------------------------------------------------
 -- LOCAL HELPER FUNCTIONS
 -----------------------------------------------------------
@@ -329,7 +326,7 @@ function control.update_combinator_slots(combinator, ghosts)
 end
 
 --- Periodic slot compaction
---- Called every COMPACT_INTERVAL ticks to remove zero-count entries
+--- Called periodically (via on_nth_tick) to remove zero-count entries
 --- Also clears orphaned slots from combinators after compaction
 --- @param event EventData.on_nth_tick
 function control.compact_ghost_slots(event)
