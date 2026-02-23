@@ -17,7 +17,8 @@
 --         },
 --         any_changes = false,
 --         next_slot = 1,
---         last_compact_tick = 0  -- Track when we last compacted slots
+--         last_compact_tick = 0,  -- Track when we last compacted slots
+--         slot_high_water = 0    -- Highest slot ever assigned (for resync orphan clearing)
 --     }
 -- }
 -- NOTE: Entity names don't always match item names (e.g., "straight-rail" -> "rail")
@@ -34,9 +35,6 @@ local gc_storage = {}
 
 -- Entity name constant
 local GHOST_COMBINATOR = "ghost-combinator"
-
--- Compaction interval (every 5 seconds = 300 ticks)
-local COMPACT_INTERVAL = 300
 
 --------------------------------------------------------------------------------
 -- Storage Initialization
@@ -73,7 +71,8 @@ function gc_storage.get_surface_data(surface_index)
             ghosts = {},
             any_changes = false,
             next_slot = 1,
-            last_compact_tick = 0
+            last_compact_tick = 0,
+            slot_high_water = 0  -- Highest slot ever assigned (for resync orphan clearing)
         }
     end
 
@@ -193,6 +192,11 @@ function gc_storage.increment_ghost(surface_index, ghost_name, quality_name)
             quality = quality_name  -- Store quality for signal
         }
         surface_data.next_slot = slot + 1
+
+        -- Track highest slot ever assigned (for resync orphan clearing)
+        if slot > (surface_data.slot_high_water or 0) then
+            surface_data.slot_high_water = slot
+        end
     end
 
     surface_data.any_changes = true
@@ -306,6 +310,20 @@ function gc_storage.clear_ghost_changed(surface_index, ghost_key)
     local ghost_entry = surface_data.ghosts[ghost_key]
     if ghost_entry then
         ghost_entry.changed = false
+    end
+end
+
+--- Reset the slot high-water mark after a full resync
+--- Called after full_resync_surface writes all slots and clears orphans
+--- @param surface_index number The surface index
+function gc_storage.reset_slot_high_water(surface_index)
+    if not surface_index then
+        return
+    end
+
+    local surface_data = storage.ghost_combinator and storage.ghost_combinator[surface_index]
+    if surface_data then
+        surface_data.slot_high_water = math.max(0, (surface_data.next_slot or 1) - 1)
     end
 end
 
