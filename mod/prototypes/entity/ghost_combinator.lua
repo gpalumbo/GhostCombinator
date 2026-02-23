@@ -13,13 +13,11 @@ local ghost_combinator = flib_data_util.copy_prototype(
 -- Basic properties
 ghost_combinator.max_health = 150
 
--- Energy configuration (1kW electric, secondary-input priority)
--- This combinator consumes power to scan for ghosts on the surface
-ghost_combinator.energy_source = {
-    type = "electric",
-    usage_priority = "secondary-input"
-}
-ghost_combinator.active_energy_usage = "1kW"
+-- NOTE: constant-combinator type does NOT support energy_source or active_energy_usage.
+-- These properties are only valid on CombinatorPrototype (arithmetic/decider combinators)
+-- and CraftingMachinePrototype descendants. Setting them here would be silently ignored
+-- or cause the entity to be stuck in a permanent no_power status with no way to satisfy it.
+-- The ghost combinator operates without power, consistent with vanilla constant combinators.
 
 -- Minable configuration
 ghost_combinator.minable = {

@@ -15,6 +15,10 @@ local signal_utils = require("lib.signal_utils")
 -- Entity name constants
 local GHOST_COMBINATOR = "ghost-combinator"
 
+-- Periodic tick intervals (in ticks; 60 ticks = 1 second)
+local COMPACT_INTERVAL = 300   -- 5 seconds: remove zero-count ghosts & compress slots
+local RESYNC_INTERVAL  = 600   -- 10 seconds: full resync of combinator outputs from storage
+
 -- Register custom input handler for pipette tool on GUI signal buttons
 script.on_event("gui-pipette-signal", function(event)
     -- Check if hovering over a signal sprite-button with signal data
@@ -193,10 +197,14 @@ script.on_event(defines.events.on_tick, function(event)
     gc_control.on_tick(event)
 end)
 
--- Every 5 seconds (300 ticks): Compact ghost slot assignments
--- Removes zero-count ghosts and compresses slot IDs to avoid gaps
-script.on_nth_tick(300, function(event)
+-- Compact ghost slot assignments: remove zero-count ghosts and compress slot IDs
+script.on_nth_tick(COMPACT_INTERVAL, function(event)
     gc_control.compact_ghost_slots(event)
+end)
+
+-- Full resync of combinator slots from storage truth (safety net for desyncs)
+script.on_nth_tick(RESYNC_INTERVAL, function(event)
+    gc_control.full_resync_all(event)
 end)
 
 -----------------------------------------------------------
